@@ -1,0 +1,298 @@
+<html>
+  <head>
+    <style>
+*,*::before,*::after{box-sizing:border-box}body,h1,h2,h3,h4,p,figure,blockquote,dl,dd{margin:0}ul[role="list"],ol[role="list"]{list-style:none}html{scroll-behavior:smooth}body{min-height:100vh;text-rendering:optimizeSpeed;line-height:1.5}a:not([class]){text-decoration-skip-ink:auto}img,picture{max-width:100%;display:block}input,button,textarea,select{font:inherit}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}}
+
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  text-align: left;
+  position: relative;
+  width: 100%;
+  height: 300px;
+  overflow: auto;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.left {
+  z-index: 1;
+  position: absolute;
+  left: 0;
+  height: 100%;
+  max-width: 100px;
+}
+
+.right {
+  z-index: 1;
+  position: absolute;
+  right: 0;
+  height: 100%;
+  max-width: 100px;
+}
+
+.middle {
+  display: contents;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  z-index: 0;
+}
+
+.colcontainer {
+  display: contents;
+  width: 300px;
+}
+
+.container * {
+  vertical-align: top;
+}
+
+.col {
+  width: 300px;
+  height: 100%;
+  display: inline-block;
+  background: white;
+  position: sticky;
+}
+
+.header {
+  text-orientation: sideways;
+  writing-mode: vertical-lr;
+  height: 100%;
+  width: 40px;
+  position: sticky;
+  left: 0;
+  top: 0;
+  padding: 0.5em;
+  transition: opacity 0.2s ease-out;
+  opacity: 0;
+}
+
+.col.lifted {
+  left: 700px;
+}
+
+.col.folded.left .header {
+  left: auto;
+  right: 0;
+}
+
+.col.folded.right .header {
+  left: 0;
+  right: auto;
+}
+
+.content {
+  padding: 30px;
+  white-space: initial;
+  width: 300px;
+  height: 100%;
+  overflow: auto;
+  transition: opacity 0.2s ease-in;
+  opacity: 1;
+}
+
+
+.marker, .shadowmarker {
+  position: absolute;
+  top: 0;
+  visibility: hidden;
+  z-index: -1;
+  height: 1px;
+}
+
+.marker, .shadowmarker {
+  visibility: visible;
+  z-index: 1;
+  height: 2em;
+}
+
+.marker {
+  border: 1px solid red;
+  visibility: hidden;
+}
+
+.marker.invert {
+  border: 1px solid blue;
+}
+
+.shadowmarker {
+  border: 1px solid green;
+}
+
+.folded .content {
+  transition: opacity 0.2s ease-out;
+  opacity: 0;
+}
+
+.col::after {
+  z-index: -1;
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0px 0px 5px 5px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+}
+
+/* Transition to showing the bigger shadow on hover */
+.shadow .col::after {
+  opacity: 1;
+}
+
+.header {
+}
+
+
+    </style>
+  </head>
+  <body>
+    <div class="container" id=container>
+      <div class="headers" id="left-headers" style="position: fixed; z-index: 20">
+        <div class="header" style="opacity: 1; position: absolute; left: 0; top: 0" id=hl1>Header 1</div>
+        <div class="header" style="opacity: 1; position: absolute; left: 40px; top: 0" id=hl2>Header 2</div>
+        <div class="header" style="opacity: 1; position: absolute; left: 80px; top: 0" id=hl3></div>
+      </div>
+      <div class="middle" id=middle>
+      </div>
+      <div class="headers" id="right-headers" style="position: fixed; right: 0; top: 0">
+        <div class="header" style="position: absolute; left: unset; right:40px; opacity: 1" id=hr1>Header 3</div>
+        <div class="header" style="position: absolute; left: unset; right:0px; opacity: 1" id=hr2>Header 4</div>
+      </div>
+    </div>
+
+    <script>
+      const container = document.getElementById('container')
+      const mid = document.getElementById('middle')
+      const COLWIDTH = 300
+      const HEADER_WIDTH = 40
+      const MAX = 8
+      const COLSPERSIDE = 2
+
+      const MARKER_WIDTH = (MAX + 1) * HEADER_WIDTH - COLWIDTH
+      const SHADOW_MARKER_WIDTH = COLWIDTH + (MAX - 1) * HEADER_WIDTH
+
+      for (let i = 0; i < MAX; ++i) {
+        const cc = document.createElement('div')
+        cc.className = 'colcontainer'
+
+        const colLeftSide = i * COLWIDTH
+        const colRightSide = colLeftSide + COLWIDTH
+
+        const col = document.createElement('div')
+        {
+          col.className = 'col'
+          col.dataset.lidx = i
+          col.dataset.ridx = MAX - i
+          const l = Math.min(i * HEADER_WIDTH, HEADER_WIDTH * COLSPERSIDE)
+          const r = Math.min(-COLWIDTH + HEADER_WIDTH * COLSPERSIDE, -COLWIDTH + HEADER_WIDTH * (MAX - i))
+          col.style = `left: ${l}px; right: ${r}px`
+        }
+
+        const marker = document.createElement('div')
+        marker.className = 'marker'
+        {
+          marker.id = `m${i}`
+          // "left" and "right" are the edges of the box where, if that edge STARTS to go
+          // off the screen, we hide the contents
+          // if left and right have crossed over, then the box is "inverted", and
+          // the box must be fully off the screen in order to have hidden contents
+          const headersOnLeft = Math.min(i, COLSPERSIDE - 1)
+          const headersOnRight = Math.min(MAX - i - 1, COLSPERSIDE - 1)
+          let left = (i + 1) * COLWIDTH - (headersOnLeft + 1) * HEADER_WIDTH
+          let right = i * COLWIDTH + (headersOnRight + 1) * HEADER_WIDTH
+          let width = right - left
+          //let left = 3 * (COLWIDTH - HEADER_WIDTH) - 2 * HEADER_WIDTH
+          if (width < 0) {
+            left += width
+            width = -width
+            marker.dataset.invert = "1"
+            marker.className += " invert"
+          }
+          marker.style = `left: ${left}px; width: ${width}px; height:100%`
+        }
+
+        const shadowmarker = document.createElement('div')
+        shadowmarker.className = 'shadowmarker'
+        {
+          const headersOnRight = Math.min(MAX - i - 1, COLSPERSIDE - 1)
+          let left = (i - 1) * COLWIDTH - (Math.min(i - 1, COLSPERSIDE)) * HEADER_WIDTH
+          let right = i * COLWIDTH + (Math.min(MAX - i, COLSPERSIDE)) * HEADER_WIDTH
+          let width = right - left
+          shadowmarker.style = `left: ${left}px; width: ${width}px; height: 100%`
+        }
+
+        const content = document.createElement('div')
+        content.className = 'content'
+        content.textContent = 'This is the content'
+        content.innerHTML = `
+        <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        </p>
+        <br/>
+        <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        </p>
+        `
+
+
+        col.appendChild(content)
+
+        cc.appendChild(marker)
+        if (i !== 0) {
+          cc.appendChild(shadowmarker)
+        }
+        cc.appendChild(col)
+
+        mid.appendChild(cc)
+      }
+
+      function addClassName(e, cn) {
+        const classNames = e.className.split(/\s+/)
+        if (!classNames.includes(cn)) {
+          classNames.push(cn)
+        }
+        e.className = classNames.join(' ')
+      }
+
+      function delClassName(e, cn) {
+        e.className = e.className.split(/\s+/).filter(x => x !== cn).join(' ')
+      }
+
+      const foldObserver = new IntersectionObserver((events) => {
+        for (const e of events) {
+          const col = e.target.parentNode
+          console.log(e.target.id, e.intersectionRatio)
+          const fold = e.target.dataset.invert === "1" ? !e.isIntersecting : e.intersectionRatio < 1
+          if (fold) {
+            addClassName(col, 'folded')
+          } else {
+            delClassName(col, 'folded')
+          }
+        }
+      }, { root: container, threshold: [0, 1] })
+
+      Array.from(document.getElementsByClassName('marker')).forEach(e => foldObserver.observe(e))
+
+      const shadowObserver = new IntersectionObserver((events) => {
+        for (const e of events) {
+          const col = e.target.parentNode
+          if (e.intersectionRatio < 1) { // && e.boundingClientRect.left <= 0) {
+            addClassName(col, 'shadow')
+          } else {
+            delClassName(col, 'shadow')
+          }
+        }
+      }, { root: container, threshold: [0, 1] })
+
+      Array.from(document.getElementsByClassName('shadowmarker')).forEach(e => shadowObserver.observe(e))
+    </script>
+  </body>
+</html>
