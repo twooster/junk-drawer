@@ -34,7 +34,7 @@ html, body {
   max-width: 100px;
 }
 
-.middle {
+.columns {
   display: contents;
   width: 100%;
   height: 100%;
@@ -42,16 +42,12 @@ html, body {
   z-index: 0;
 }
 
-.colcontainer {
+.column {
   display: contents;
   width: 300px;
 }
 
-.container * {
-  vertical-align: top;
-}
-
-.col {
+.content-container {
   width: 300px;
   height: 100%;
   display: inline-block;
@@ -59,31 +55,33 @@ html, body {
   position: sticky;
 }
 
+.headers {
+  position: fixed;
+  height: inherit;
+  top: 0;
+}
+
 .header {
   text-orientation: sideways;
   writing-mode: vertical-lr;
   height: 100%;
   width: 40px;
-  position: sticky;
-  left: 0;
-  top: 0;
   padding: 0.5em;
   transition: opacity 0.2s ease-out;
   opacity: 0;
+  display: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.col.lifted {
-  left: 700px;
+.header {
+  display: inline-block;
+  opacity: 1;
 }
 
-.col.folded.left .header {
-  left: auto;
-  right: 0;
-}
-
-.col.folded.right .header {
-  left: 0;
-  right: auto;
+.header.visible {
+  display: block;
+  opacity: 1;
 }
 
 .content {
@@ -97,31 +95,12 @@ html, body {
 }
 
 
-.marker, .shadowmarker {
+.marker {
   position: absolute;
   top: 0;
   visibility: hidden;
   z-index: -1;
-  height: 1px;
-}
-
-.marker, .shadowmarker {
-  visibility: visible;
-  z-index: 1;
-  height: 2em;
-}
-
-.marker {
-  border: 1px solid red;
-  visibility: hidden;
-}
-
-.marker.invert {
-  border: 1px solid blue;
-}
-
-.shadowmarker {
-  border: 1px solid green;
+  height: 100%;
 }
 
 .folded .content {
@@ -129,7 +108,7 @@ html, body {
   opacity: 0;
 }
 
-.col::after {
+.content-container::after {
   z-index: -1;
   content: "";
   position: absolute;
@@ -143,96 +122,39 @@ html, body {
 }
 
 /* Transition to showing the bigger shadow on hover */
-.shadow .col::after {
+.shadow .content-container::after {
   opacity: 1;
 }
 
-.header {
+.shadow.folded .content-container.midcol::after {
+  opacity: 0
 }
-
 
     </style>
   </head>
   <body>
     <div class="container" id=container>
-      <div class="headers" id="left-headers" style="position: fixed; z-index: 20">
-        <div class="header" style="opacity: 1; position: absolute; left: 0; top: 0" id=hl1>Header 1</div>
-        <div class="header" style="opacity: 1; position: absolute; left: 40px; top: 0" id=hl2>Header 2</div>
-        <div class="header" style="opacity: 1; position: absolute; left: 80px; top: 0" id=hl3></div>
+      <div class="columns" id=columns></div>
+      <div class="headers" style="left: 0; z-index: 10">
+        <div class="header" id=hl2>XX 1</div>
+        <div class="header" id=hl1>XX 2</div>
       </div>
-      <div class="middle" id=middle>
-      </div>
-      <div class="headers" id="right-headers" style="position: fixed; right: 0; top: 0">
-        <div class="header" style="position: absolute; left: unset; right:40px; opacity: 1" id=hr1>Header 3</div>
-        <div class="header" style="position: absolute; left: unset; right:0px; opacity: 1" id=hr2>Header 4</div>
+      <div class="headers" style="right: 0">
+        <div class="header" id=hr1>XX 3</div>
+        <div class="header" id=hr2>XX 4</div>
       </div>
     </div>
 
     <script>
       const container = document.getElementById('container')
-      const mid = document.getElementById('middle')
-      const COLWIDTH = 300
+      const columns = document.getElementById('columns')
+      const COL_WIDTH = 300
       const HEADER_WIDTH = 40
-      const MAX = 8
-      const COLSPERSIDE = 2
+      const DESIRED_COLS_PER_SIDE = 2
 
-      const MARKER_WIDTH = (MAX + 1) * HEADER_WIDTH - COLWIDTH
-      const SHADOW_MARKER_WIDTH = COLWIDTH + (MAX - 1) * HEADER_WIDTH
-
-      for (let i = 0; i < MAX; ++i) {
-        const cc = document.createElement('div')
-        cc.className = 'colcontainer'
-
-        const colLeftSide = i * COLWIDTH
-        const colRightSide = colLeftSide + COLWIDTH
-
-        const col = document.createElement('div')
-        {
-          col.className = 'col'
-          col.dataset.lidx = i
-          col.dataset.ridx = MAX - i
-          const l = Math.min(i * HEADER_WIDTH, HEADER_WIDTH * COLSPERSIDE)
-          const r = Math.min(-COLWIDTH + HEADER_WIDTH * COLSPERSIDE, -COLWIDTH + HEADER_WIDTH * (MAX - i))
-          col.style = `left: ${l}px; right: ${r}px`
-        }
-
-        const marker = document.createElement('div')
-        marker.className = 'marker'
-        {
-          marker.id = `m${i}`
-          // "left" and "right" are the edges of the box where, if that edge STARTS to go
-          // off the screen, we hide the contents
-          // if left and right have crossed over, then the box is "inverted", and
-          // the box must be fully off the screen in order to have hidden contents
-          const headersOnLeft = Math.min(i, COLSPERSIDE - 1)
-          const headersOnRight = Math.min(MAX - i - 1, COLSPERSIDE - 1)
-          let left = (i + 1) * COLWIDTH - (headersOnLeft + 1) * HEADER_WIDTH
-          let right = i * COLWIDTH + (headersOnRight + 1) * HEADER_WIDTH
-          let width = right - left
-          //let left = 3 * (COLWIDTH - HEADER_WIDTH) - 2 * HEADER_WIDTH
-          if (width < 0) {
-            left += width
-            width = -width
-            marker.dataset.invert = "1"
-            marker.className += " invert"
-          }
-          marker.style = `left: ${left}px; width: ${width}px; height:100%`
-        }
-
-        const shadowmarker = document.createElement('div')
-        shadowmarker.className = 'shadowmarker'
-        {
-          const headersOnRight = Math.min(MAX - i - 1, COLSPERSIDE - 1)
-          let left = (i - 1) * COLWIDTH - (Math.min(i - 1, COLSPERSIDE)) * HEADER_WIDTH
-          let right = i * COLWIDTH + (Math.min(MAX - i, COLSPERSIDE)) * HEADER_WIDTH
-          let width = right - left
-          shadowmarker.style = `left: ${left}px; width: ${width}px; height: 100%`
-        }
-
-        const content = document.createElement('div')
-        content.className = 'content'
-        content.textContent = 'This is the content'
-        content.innerHTML = `
+      const columnData = Array(8).fill(0).map((_, i) =>
+        ({ header: `header ${i + 1}`, content: `
+        <h2>Header ${i + 1}</h2>
         <p>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
         </p>
@@ -240,18 +162,73 @@ html, body {
         <p>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
         </p>
-        `
+        `})
+      )
 
+      const columnCount = columnData.length
+      const COLS_PER_SIDE = Math.min(columnCount - 1, DESIRED_COLS_PER_SIDE)
 
-        col.appendChild(content)
+      for (let i = 0; i < columnData.length; ++i) {
+        const column = columnData[i]
 
-        cc.appendChild(marker)
-        if (i !== 0) {
-          cc.appendChild(shadowmarker)
+        const col = document.createElement('div')
+        col.className = 'column'
+        col.dataset.lidx = i + 1
+        col.dataset.ridx = columnCount - i
+        col.dataset.header = column.header
+
+        const contentContainer = document.createElement('div')
+        {
+          contentContainer.className = 'content-container'
+          if (i >= COLS_PER_SIDE && i < columnCount - COLS_PER_SIDE) {
+            contentContainer.className += ' midcol'
+          }
+          const left = Math.min(i * HEADER_WIDTH, HEADER_WIDTH * COLS_PER_SIDE)
+          const right = Math.min(-COL_WIDTH + HEADER_WIDTH * COLS_PER_SIDE, -COL_WIDTH + HEADER_WIDTH * (columnCount - i))
+          contentContainer.style = `left: ${left}px; right: ${right}px`
         }
-        cc.appendChild(col)
 
-        mid.appendChild(cc)
+        const foldMarker = document.createElement('div')
+        foldMarker.className = 'marker fold'
+        {
+          foldMarker.id = `m${i}`
+          // "left" and "right" are the edges of the box where, if that edge STARTS to go
+          // off the screen, we hide the contents
+          // if left and right have crossed over, then the box is "inverted", and
+          // the box must be fully off the screen in order to have hidden contents
+          let left = (i + 1) * COL_WIDTH - Math.min(i + 1, COLS_PER_SIDE) * HEADER_WIDTH
+          let right = i * COL_WIDTH + Math.min(columnCount - i, COLS_PER_SIDE) * HEADER_WIDTH
+          let width = right - left
+          if (width < 0) {
+            left += width
+            width = -width
+            foldMarker.dataset.invert = "1"
+          }
+          foldMarker.style = `left: ${left}px; width: ${width}px`
+        }
+
+        const shadowMarker = document.createElement('div')
+        shadowMarker.className = 'marker shadow'
+        {
+          let left = (i - 1) * COL_WIDTH - Math.min(i - 1, COLS_PER_SIDE) * HEADER_WIDTH
+          let right = i * COL_WIDTH + Math.min(columnCount - i, COLS_PER_SIDE) * HEADER_WIDTH
+          let width = right - left
+          shadowMarker.style = `left: ${left}px; width: ${width}px`
+        }
+
+        const content = document.createElement('div')
+        content.className = 'content'
+        content.innerHTML = column.content
+
+        contentContainer.appendChild(content)
+
+        col.appendChild(foldMarker)
+        if (i !== 0) {
+          col.appendChild(shadowMarker)
+        }
+        col.appendChild(contentContainer)
+
+        columns.appendChild(col)
       }
 
       function addClassName(e, cn) {
@@ -269,22 +246,32 @@ html, body {
       const foldObserver = new IntersectionObserver((events) => {
         for (const e of events) {
           const col = e.target.parentNode
-          console.log(e.target.id, e.intersectionRatio)
-          const fold = e.target.dataset.invert === "1" ? !e.isIntersecting : e.intersectionRatio < 1
-          if (fold) {
+          const trigger = e.target.dataset.invert === "1" ? !e.isIntersecting : e.intersectionRatio < 1
+          if (trigger) {
             addClassName(col, 'folded')
           } else {
             delClassName(col, 'folded')
           }
         }
+        let lmin = Infinity
+        let rmin = Infinity
+        for (const column of columns.childNodes) {
+          if (!/\bfolded\b/.test(column.className)) {
+            const { lidx, ridx } = column.dataset
+            lmin = Math.min(lmin, lidx)
+            rmin = Math.min(rmin, ridx)
+          }
+        }
+
       }, { root: container, threshold: [0, 1] })
 
-      Array.from(document.getElementsByClassName('marker')).forEach(e => foldObserver.observe(e))
+      Array.from(document.getElementsByClassName('marker fold')).forEach(e => foldObserver.observe(e))
 
       const shadowObserver = new IntersectionObserver((events) => {
         for (const e of events) {
           const col = e.target.parentNode
-          if (e.intersectionRatio < 1) { // && e.boundingClientRect.left <= 0) {
+          const trigger = e.target.dataset.invert === "1" ? !e.isIntersecting : e.intersectionRatio < 1
+          if (trigger) {
             addClassName(col, 'shadow')
           } else {
             delClassName(col, 'shadow')
@@ -292,7 +279,7 @@ html, body {
         }
       }, { root: container, threshold: [0, 1] })
 
-      Array.from(document.getElementsByClassName('shadowmarker')).forEach(e => shadowObserver.observe(e))
+      Array.from(document.getElementsByClassName('marker shadow')).forEach(e => shadowObserver.observe(e))
     </script>
   </body>
 </html>
