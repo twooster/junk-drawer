@@ -211,7 +211,8 @@ html, body {
         outerSticky.appendChild(innerSticky)
 
         const innerSpacer = document.createElement('div')
-        innerSpacer.style = `position: static; width: 260px; border: 1px dashed green; display: inline-block`
+        innerSpacer.style = `position: static; width: 300px; margin-right: -40px; border: 1px dashed green; display: inline-block`
+        innerSpacer.textContent = 'content?'
         innerSticky.appendChild(innerSpacer)
 
         const header = document.createElement('div')

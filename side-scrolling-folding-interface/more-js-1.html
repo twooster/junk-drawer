@@ -177,10 +177,11 @@ html, body {
     </div>
 
     <div class="container" id=c1
+    style="overflow: auto"
       ><div id=c2
           ><div style="position: relative; width: 820px; left: 0; border: 1px solid red"
-            ><div style="position: static; width: 260px; border: 1px dashed green; display: inline-block"></div
-              ><div style="position: sticky; left: 0px; right: 0px; width: 40px; border: 1px solid green; display: inline-block">test</div
+            ><div style="position: sticky; left: 0px; right: 0; width: 300px; border: 1px dotted black; display: inline-block">content?</div
+            ><div style="position: sticky; left: 0px; right: 0px; width: 40px; border: 1px solid green; margin-left: -40px; display: inline-block">test</div
           ></div
       ></div
       ><div style="width: 5000px">&nbsp;</div
@@ -196,26 +197,37 @@ html, body {
 
       for (let i = 0; i < 3; ++i) {
         const outer = document.createElement('div')
-        outer.style = `position: relative; width: 1120px; left: ${i*COL_WIDTH}px; border: 1px solid red`
+        outer.style = `position: relative; width: 860px; left: ${i*COL_WIDTH}px; border: 1px solid red`
 
+        /*
         const outerSpacer = document.createElement('div')
-        outerSpacer.style = `position: static; width: 300px; border: 1px dashed green; display: inline-block`
+        outerSpacer.style = `position: static; width: ${COL_WIDTH}px; border: 1px dashed green; display: inline-block`
         outer.appendChild(outerSpacer)
+        */
+
+        const content = document.createElement('div')
+        content.style = `position: sticky; left: 40px; margin-left: 300px; width: 300px; border: 1px dotted black; display: inline-block`
+        content.textContent = 'content?'
+        outer.appendChild(content)
+
 
         const outerSticky = document.createElement('div')
-        outerSticky.style = `position: sticky; left: -220px; right: -220px; width: 560px; border: 1px dashed purple; display: inline-block`
+        outerSticky.style = `position: sticky; margin-left: -300px; left: -220px; right: -220px; width: ${COL_WIDTH}px; border: 1px dashed purple; display: inline-block`
         outer.appendChild(outerSticky)
 
+
         const innerSticky = document.createElement('div')
-        innerSticky.style = `position: sticky; left: 40px; right: 40px; width: 560px; border: 1px solid blue; display: inline-block`
+        innerSticky.style = `position: sticky; left: 40px; right: 40px; width: 520px; border: 1px solid blue; display: inline-block; text-align: right`
         outerSticky.appendChild(innerSticky)
 
+        /*
         const innerSpacer = document.createElement('div')
-        innerSpacer.style = `position: static; width: 260px; border: 1px dashed green; display: inline-block`
+        innerSpacer.style = `position: static; width: 300px; border: 1px dotted black; display: inline-block`
         innerSticky.appendChild(innerSpacer)
+        */
 
         const header = document.createElement('div')
-        header.style = 'position: sticky; left: 0px; right: 0px; width: 40px; border: 1px solid green; display: inline-block'
+        header.style = 'position: sticky; left: 0px; right: 0px; width: 40px; margin-right: 220px; border: 1px solid green; display: inline-block'
         header.textContent = 'test'
         innerSticky.appendChild(header)
 
